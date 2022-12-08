@@ -36,14 +36,19 @@ OSG_GLIDEIN_VERSION=684
 
 
 glidein_config="$1"
+advertise_base_log=""
+mkdir -p log
+touch "$advertise_base_log"
 
 function info {
     echo "INFO  " "$@" 1>&2
+    [[ -n $advertise_base_log ]] && printf "[%s] INFO  %s\n" "$(date +%FT%T)" "$*" >> "$advertise_base_log"
 }
 
 function my_warn {
-    echo "WARN  " "$@" 1>&2
-    export GLIDEIN_VALIDATION_WARNINGS="$*. $GLIDEIN_VALIDATION_WARNINGS"
+    echo "WARN  " "$@" | tee -a "$advertise_base_log" 1>&2
+    [[ -n $advertise_base_log ]] && printf "[%s] WARN  %s\n" "$(date +%FT%T)" "$*" >> "$advertise_base_log"
+    export GLIDEIN_VALIDATION_WARNINGS="$@. $GLIDEIN_VALIDATION_WARNINGS"
 }
 
 function advertise {
@@ -164,6 +169,9 @@ else
         fi
     done
 fi
+
+mkdir -p "$PWD/log"
+advertise_base_log="$PWD/log/advertise-base.log"
 
 # bash can set a default PATH - make sure it is exported
 export PATH=$PATH
