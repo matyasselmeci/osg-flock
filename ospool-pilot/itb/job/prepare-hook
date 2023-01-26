@@ -8,10 +8,6 @@ GWMS_THIS_SCRIPT="$0"
 GWMS_THIS_SCRIPT_DIR=$(readlink -f "$(dirname "$0")/..")
 EXITSLEEP=10m
 
-# Directory in Singularity where auxiliary files are copied (e.g. singularity_lib.sh)
-GWMS_AUX_SUBDIR=${GWMS_AUX_SUBDIR:-".gwms_aux"}
-export GWMS_AUX_SUBDIR
-
 # GWMS_BASE_SUBDIR (directory where the base glidein directory is mounted) not defiled in Singularity for the user jobs, only for setup scripts
 # Directory to use for bin, lib, exec, ...
 GWMS_SUBDIR=${GWMS_SUBDIR:-".gwms.d"}
