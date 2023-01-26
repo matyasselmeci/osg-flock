@@ -23,9 +23,7 @@ if [ "x$CVMFS_BASE" = "x" ]; then
 fi
 
 # Manage GWMS debug and info messages in the stdout/err (unless userjob option is set)
-#[[ ! ",${GLIDEIN_DEBUG_OPTIONS}," = *,userjob,* ]] && GLIDEIN_QUIET=True
 [[ ! ",${GLIDEIN_DEBUG_OPTIONS}," = *,nowait,* ]] && EXITSLEEP=2m  # leave 2min to update classad
-GLIDEIN_DEBUG_OUTPUT=1
 
 # When failing we need to tell HTCondor to put the job back in the queue by creating
 # a file in the PATH pointed by $_CONDOR_WRAPPER_ERROR_FILE
@@ -379,7 +377,6 @@ info_dbg "Location of singularity: $GWMS_SINGULARITY_PATH"
 
 # Set up environment to know if HAS_SINGULARITY is enabled.
 setup_classad_variables
-GLIDEIN_DEBUG_OUTPUT=1
 
 # Check if singularity is disabled or enabled
 # This script could run when singularity is optional and not wanted
