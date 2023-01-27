@@ -13,11 +13,6 @@ EXITSLEEP=10m
 GWMS_SUBDIR=${GWMS_SUBDIR:-".gwms.d"}
 export GWMS_SUBDIR
 
-# CVMFS_BASE defaults to /cvmfs but can be overridden in case of for example cvmfsexec
-if [ "x$CVMFS_BASE" = "x" ]; then
-    CVMFS_BASE="/cvmfs"
-fi
-
 # Manage GWMS debug and info messages in the stdout/err (unless userjob option is set)
 [[ ! ",${GLIDEIN_DEBUG_OPTIONS}," = *,nowait,* ]] && EXITSLEEP=2m  # leave 2min to update classad
 
