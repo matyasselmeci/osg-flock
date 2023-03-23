@@ -12,9 +12,10 @@ function info {
 
 function my_warn {
     echo "WARN   $*" 1>&2
-    export GLIDEIN_VALIDATION_WARNINGS="$@. $GLIDEIN_VALIDATION_WARNINGS"
+    export GLIDEIN_VALIDATION_WARNINGS="$*. $GLIDEIN_VALIDATION_WARNINGS"
 }
 
+# Advertise an attribute in the machine ad and the job environment
 function advertise {
     # atype is the type of the value as defined by GlideinWMS:
     #   I - integer
@@ -33,6 +34,51 @@ function advertise {
         echo "$key = \"$value\""
     else
         echo "$key = $value"
+    fi
+}
+
+# Advertise an attribute in the machine ad but not the job environment
+function advertise_no_env {
+    # atype is the type of the value as defined by GlideinWMS:
+    #   I - integer
+    #   S - quoted string
+    #   C - unquoted string (i.e. Condor keyword or expression)
+    key="$1"
+    value="$2"
+    atype="$3"
+
+    if [ "$glidein_config" != "NONE" ]; then
+        add_config_line_safe $key "$value"
+        add_condor_vars_line $key "$atype" "-" "+" "Y" "N" "-"
+    fi
+
+    if [ "$atype" = "S" ]; then
+        echo "$key = \"$value\""
+    else
+        echo "$key = $value"
+    fi
+}
+
+# Sets the value of a config knob in the condor config;
+# does not export it as a startd attribute, nor does it export it to the job environment
+# Reference: https://glideinwms.fnal.gov/doc.prd/factory/custom_vars.html
+function set_condor_knob {
+    local name value
+    name=$1
+    value=$2
+
+    if [ "$glidein_config" != "NONE" ]; then
+        add_config_line "$name" "$value"
+        add_condor_vars_line "$name" \
+            "C" `# unquoted string (i.e. HTCondor keyword or expression)` \
+            "-" `# no default value` \
+            "+" `# also use $name for the name of the config knob` \
+            "N" `# a value is not required for this attribute` \
+            "N" `# do not have the startd publish this to the collector` \
+            "-" `# do not export to the user job environment`
+    else
+        # Does not work in startd_cron mode
+        return 1
     fi
 }
 
