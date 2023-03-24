@@ -225,7 +225,12 @@ done
 
 ###########################################################
 # Find available volumes and set up bind mounts for Singularity jobs
-GLIDEIN_SINGULARITY_BINDPATH=`grep -i "^GLIDEIN_SINGULARITY_BINDPATH " $glidein_config | awk '{print $2}'`
+if [[ $GLIDEIN_SINGULARITY_BINDPATH ]]; then
+    info "Took GLIDEIN_SINGULARITY_BINDPATH from environment: $GLIDEIN_SINGULARITY_BINDPATH"
+else
+    GLIDEIN_SINGULARITY_BINDPATH=`grep -i "^GLIDEIN_SINGULARITY_BINDPATH " $glidein_config | awk '{print $2}'`
+    info "Took GLIDEIN_SINGULARITY_BINDPATH from glidein config: $GLIDEIN_SINGULARITY_BINDPATH"
+fi
 SINGULARITY_BIND_EXPR="/etc/hosts,/etc/localtime"
 OLDIFS=$IFS
 IFS=' ,'
