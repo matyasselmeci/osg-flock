@@ -162,6 +162,7 @@ function check_singularity_sif_support {
     # it's like 3 megs
     local arch=$(uname -m)
     local cvmfs_alpine="/cvmfs/oasis.opensciencegrid.org/osg/projects/OSG-Staff/images/$arch/library__alpine__latest.sif"
+    local http_alpine="http://ospool-images.osgprod.tempest.chtc.io/repo/$arch/library__alpine__latest.sif"
     # temporary seperation until we decide on longterm multi-arch hosting
     if [ "X$arch" = "Xx86_64" ]; then
         local static_registry_alpine="docker://ospool-static-registry.osg.chtc.io/alpine:latest"
@@ -194,6 +195,7 @@ function check_singularity_sif_support {
     if [ ! -e $image_dir/gwms-alpine.sif.log ]; then
         (cp "$cvmfs_alpine" $image_dir/gwms-alpine.sif ||
              timeout 60s $singularity_path pull --force $image_dir/gwms-alpine.sif "$static_registry_alpine" ||
+             timeout 60s http_download "$http_alpine" "$image_dir/gwms-alpine.sif" ||
              my_warn "All sources failed - could not create gwms-alpine.sif"
         ) &> $image_dir/gwms-alpine.sif.log
     fi
