@@ -76,6 +76,10 @@ function pull_default_container_image {
         advertise SINGULARITY_IMAGES_DICT "default:$IMAGE_PATH" "S"
         advertise REQUIRED_OS "default" "S"
         advertise OSG_DEFAULT_SINGULARITY_IMAGE "$IMAGE_PATH" "S"
+        gconfig_add USE_DEFAULT_CONTAINER true
+        add_condor_vars_line USE_DEFAULT_CONTAINER C - + N N -
+        gconfig_add DEFAULT_CONTAINER_IMAGE "$SELECTED_IMAGE"
+        add_condor_vars_line DEFAULT_CONTAINER_IMAGE S - + N N -
         return 0
     else
         my_warn "Failed to pull $SELECTED_IMAGE via http/pelican/registry"
@@ -190,6 +194,10 @@ function determine_default_container_image {
     advertise OSG_DEFAULT_SINGULARITY_IMAGE "$SELECTED_IMAGE" "S"
     advertise OSG_DEFAULT_SINGULARITY_IMAGE_SOURCE "CVMFS" "S"
     advertise REQUIRED_OS "default" "S"
+    gconfig_add USE_DEFAULT_CONTAINER true
+    add_condor_vars_line USE_DEFAULT_CONTAINER C - + N N -
+    gconfig_add DEFAULT_CONTAINER_IMAGE "$SELECTED_IMAGE"
+    add_condor_vars_line DEFAULT_CONTAINER_IMAGE S - + N N -
 }
 
 if [ "$glidein_config" != "NONE" ]; then

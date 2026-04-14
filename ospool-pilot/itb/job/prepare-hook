@@ -410,16 +410,16 @@ fi
 
 export UNPACK_SIF
 
-OSG_DEFAULT_SINGULARITY_IMAGE="$(gconfig_get OSG_DEFAULT_SINGULARITY_IMAGE)"
-# Verify we have a default image and that it exists.
-# I am being very strict about this because
-# - OSG_DEFAULT_SINGULARITY_IMAGE should be defined in this glidein version
-# - the image should have been downloaded before the pilot started
-if [[ ! $OSG_DEFAULT_SINGULARITY_IMAGE ]]; then
-    exit_hook_stop_pilot 305 "OSG_DEFAULT_SINGULARITY_IMAGE is not defined"
-elif [[ ! -e $OSG_DEFAULT_SINGULARITY_IMAGE ]]; then
-    exit_hook_stop_pilot 306 "OSG_DEFAULT_SINGULARITY_IMAGE ($OSG_DEFAULT_SINGULARITY_IMAGE) does not exist as a local file/directory"
-fi
+# OSG_DEFAULT_SINGULARITY_IMAGE="$(gconfig_get OSG_DEFAULT_SINGULARITY_IMAGE)"
+# # Verify we have a default image and that it exists.
+# # I am being very strict about this because
+# # - OSG_DEFAULT_SINGULARITY_IMAGE should be defined in this glidein version
+# # - the image should have been downloaded before the pilot started
+# if [[ ! $OSG_DEFAULT_SINGULARITY_IMAGE ]]; then
+#     exit_hook_stop_pilot 305 "OSG_DEFAULT_SINGULARITY_IMAGE is not defined"
+# elif [[ ! -e $OSG_DEFAULT_SINGULARITY_IMAGE ]]; then
+#     exit_hook_stop_pilot 306 "OSG_DEFAULT_SINGULARITY_IMAGE ($OSG_DEFAULT_SINGULARITY_IMAGE) does not exist as a local file/directory"
+# fi
 
 # TODO: Should downloading and building the Singularity image be in the pre-transfer hook (HOOK_PREPARE_JOB_BEFORE_TRANSFER) ?
 
@@ -444,8 +444,8 @@ if [[ $GWMS_SINGULARITY_IMAGE ]]; then
     GWMS_SINGULARITY_IMAGE_HUMAN="$GWMS_SINGULARITY_IMAGE"
     GWMS_SINGULARITY_IMAGE=$(maybe_expand_cvmfs_image_path "$GWMS_SINGULARITY_IMAGE")
     msg="Using Singularity image $GWMS_SINGULARITY_IMAGE_HUMAN"
-else
-    msg="Using default Singularity image $OSG_DEFAULT_SINGULARITY_IMAGE"
+# else
+#     msg="Using default Singularity image $OSG_DEFAULT_SINGULARITY_IMAGE"
 fi
 
 prepare_scratch_dir
