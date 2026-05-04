@@ -73,9 +73,8 @@ pretty_name = os_info.get("PRETTY_NAME", f"{distro_id} {version_id}")
 kernel_raw = platform.release()
 kernel_tuple = parse_kernel_version(kernel_raw)
 
-print(f"System:  {pretty_name}")
-print(f"Kernel:  {kernel_raw}")
-print()
+print(f"CVE-2026-31431: System:  {pretty_name}")
+print(f"CVE-2026-31431: Kernel:  {kernel_raw}")
 
 # CVE-2026-31431
 patched = kernel_is_patched(distro_id, version_id, kernel_tuple) if kernel_tuple else None
