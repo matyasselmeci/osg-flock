@@ -2,7 +2,7 @@
 
 import platform
 import re
-import socket
+import subprocess
 
 
 def get_os_info():
@@ -93,11 +93,25 @@ else:
         note = f"kernel {kernel_raw} < {fixed_str} — running runtime check"
     print(f"CVE-2026-31431: ({note})")
     try:
-        s = socket.socket(socket.AF_ALG, socket.SOCK_SEQPACKET, 0)
-        s.bind(("aead", "gcm(aes)"))
-        s.close()
-        print("CVE-2026-31431: VULNERABLE: algif_aead is reachable")
-    except FileNotFoundError:
-        print("CVE-2026-31431: OK: AEAD algorithm not available (module blocked)")
-    except OSError as e:
-        print(f"CVE-2026-31431: OK: {e}")
+        with open("/proc/cmdline") as f:
+            cmdline = f.read()
+    except OSError:
+        cmdline = ""
+    if "initcall_blacklist=algif_aead_init" in cmdline:
+        print("CVE-2026-31431: OK: algif_aead_init is blacklisted in kernel cmdline")
+    else:
+        try:
+            result = subprocess.run(
+                ["lsmod"], capture_output=True, text=True, check=True
+            )
+            loaded = any(
+                line.split()[0] == "algif_aead"
+                for line in result.stdout.splitlines()
+                if line.split()
+            )
+        except OSError:
+            loaded = False
+        if loaded:
+            print("CVE-2026-31431: VULNERABLE: algif_aead module is loaded")
+        else:
+            print("CVE-2026-31431: OK: algif_aead module is not loaded")
