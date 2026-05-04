@@ -99,18 +99,21 @@ else:
     if "initcall_blacklist=algif_aead_init" in cmdline:
         print("CVE-2026-31431: OK: algif_aead_init is blacklisted in kernel cmdline")
     else:
-        try:
-            result = subprocess.run(
-                ["lsmod"], capture_output=True, text=True, check=True
-            )
-            loaded = any(
-                line.split()[0] == "algif_aead"
-                for line in result.stdout.splitlines()
-                if line.split()
-            )
-        except OSError:
-            loaded = False
-        if loaded:
-            print("CVE-2026-31431: VULNERABLE: algif_aead module is loaded")
+        if distro_id.lower() not in ("debian", "ubuntu"):
+            print("CVE-2026-31431: VULNERABLE: algif_aead_init not blacklisted in cmdline, on RHEL like system")
         else:
-            print("CVE-2026-31431: OK: algif_aead module is not loaded")
+            try:
+                result = subprocess.run(
+                    ["lsmod"], capture_output=True, text=True, check=True
+                )
+                loaded = any(
+                    line.split()[0] == "algif_aead"
+                    for line in result.stdout.splitlines()
+                    if line.split()
+                )
+            except OSError:
+                loaded = False
+            if loaded:
+                print("CVE-2026-31431: VULNERABLE: algif_aead module is loaded")
+            else:
+                print("CVE-2026-31431: OK: algif_aead module is not loaded")
