@@ -49,9 +49,9 @@ def kernel_tuple_str(t):
 # Kernels at or above this version do not need the runtime socket test.
 # RHEL-family entries use a 4-tuple (major, minor, patch, rhel_release).
 CVE_2026_31431_FIXED = {
-    ("almalinux", "8"): (4, 18, 0, 553), placeholder
-    ("almalinux", "9"): (5, 14, 0, 611), placeholder
-    ("almalinux", "10"): (6, 12, 0, 124), placeholder
+    ("almalinux", "8"): (4, 18, 0, 553),
+    ("almalinux", "9"): (5, 14, 0, 611),
+    ("almalinux", "10"): (6, 12, 0, 124),
     ("debian", "13"): (6, 12, 85),
 }
 
