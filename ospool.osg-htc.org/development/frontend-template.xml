@@ -340,7 +340,7 @@
          </files>
       </group>
 
-      <group name="alloc-IceCube-Anvil-GPU" enabled="True">
+      <group name="alloc-IceCube-Anvil-GPU" enabled="False">
          <config ignore_down_entries="">
             <glideins_removal margin="0" requests_tracking="True" type="DISABLE" wait="30"/>
             <idle_glideins_lifetime max="864000"/>
