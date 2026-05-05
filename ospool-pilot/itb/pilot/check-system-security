@@ -90,11 +90,11 @@ if patched is True:
     print(f"CVE-2026-31431: OK: kernel {kernel_raw} >= {fixed_str} (patched for {pretty_name})")
 else:
     if patched is None:
-        note = "no fixed-version data for this distribution — running runtime check"
+        note = "no fixed-version data for this distribution - running runtime check"
     else:
         fixed_ver = CVE_2026_31431_FIXED[(distro_id.lower(), version_id)]
         fixed_str = kernel_tuple_str(fixed_ver)
-        note = f"kernel {kernel_raw} < {fixed_str} — running runtime check"
+        note = f"kernel {kernel_raw} < {fixed_str} - running runtime check"
     print(f"CVE-2026-31431: ({note})")
     try:
         with open("/proc/cmdline") as f:
