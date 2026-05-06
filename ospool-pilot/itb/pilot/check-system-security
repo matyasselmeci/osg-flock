@@ -23,13 +23,13 @@ def parse_kernel_version(release):
     """Extract a version tuple from a kernel release string.
 
     RHEL-family kernels (e.g. 4.18.0-553.120.1.el8_10.x86_64) return a
-    4-tuple (major, minor, patch, rhel_release) so the RHEL release number
-    (553 in the example) participates in comparisons — the upstream triple
-    4.18.0 never changes across Rocky/RHEL 8 errata.
+    5-tuple (major, minor, patch, rhel_release, patch_level) so both the
+    RHEL release number (553) and the per-release patch level (120) participate
+    in comparisons — the upstream triple 4.18.0 never changes across errata.
 
     All other kernels return a 3-tuple (major, minor, patch).
     """
-    rhel_match = re.match(r"(\d+)\.(\d+)\.(\d+)-(\d+)\.\d+.*\.el\d", release)
+    rhel_match = re.match(r"(\d+)\.(\d+)\.(\d+)-(\d+)\.(\d+).*\.el\d", release)
     if rhel_match:
         return tuple(int(x) for x in rhel_match.groups())
     match = re.match(r"(\d+)\.(\d+)\.(\d+)", release)
@@ -39,23 +39,27 @@ def parse_kernel_version(release):
 
 
 def kernel_tuple_str(t):
-    """Format a version tuple as a human-readable string (e.g. '4.18.0-553')."""
-    if len(t) == 4:
-        return f"{t[0]}.{t[1]}.{t[2]}-{t[3]}"
+    """Format a version tuple as a human-readable string (e.g. '4.18.0-553.120')."""
+    if len(t) == 5:
+        return f"{t[0]}.{t[1]}.{t[2]}-{t[3]}.{t[4]}"
     return ".".join(str(x) for x in t)
 
 
 # Minimum kernel version where CVE-2026-31431 is fixed, keyed by (distro_id, version_id).
 # Kernels at or above this version do not need the runtime socket test.
-# RHEL-family entries use a 4-tuple (major, minor, patch, rhel_release).
+# RHEL-family entries use a 5-tuple (major, minor, patch, rhel_release, patch_level).
 CVE_2026_31431_FIXED = {
-    ("almalinux", "8"): (4, 18, 0, 553),
-    ("almalinux", "9"): (5, 14, 0, 611),
-    ("almalinux", "10"): (6, 12, 0, 124),
+    ("almalinux", "8"): (4, 18, 0, 553, 121),
+    ("almalinux", "9"): (5, 14, 0, 611, 49),
+    ("almalinux", "10"): (6, 12, 0, 124, 52),
+    ("centos", "7"): (3, 10, 0),
     ("debian", "13"): (6, 12, 85),
-    ("rhel", "8"): (4, 18, 0, 553),
-    ("rhel", "9"): (5, 14, 0, 611),
-    ("rhel", "10"): (6, 12, 0, 124),
+    ("rhel", "8"): (4, 18, 0, 553, 123),
+    ("rhel", "9"): (5, 14, 0, 611, 54),
+    ("rhel", "10"): (6, 12, 0, 124, 55),
+    ("rocky", "8"): (4, 18, 0, 553, 123),
+    ("rocky", "9"): (5, 14, 0, 611, 54),
+    ("rocky", "10"): (6, 12, 0, 124, 55),
 }
 
 
@@ -78,7 +82,7 @@ pretty_name = os_info.get("PRETTY_NAME", f"{distro_id} {version_id}")
 kernel_raw = platform.release()
 kernel_tuple = parse_kernel_version(kernel_raw)
 
-print(f"CVE-2026-31431: System:  {pretty_name}")
+print(f"CVE-2026-31431: System:  {pretty_name}  ({distro_id} {version_id})")
 print(f"CVE-2026-31431: Kernel:  {kernel_raw}")
 
 # CVE-2026-31431
