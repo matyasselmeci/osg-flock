@@ -184,7 +184,6 @@ function download_minimal_sif_image {
     fi
 
     # http. first, we have to determine the latest version of the selected image
-    echo "curl -s -S --insecure --max-time 60 --retry 0 --fail $http_base/$arch/htc__minimal__0/latest.txt"
     latest=$(curl -s -S --insecure --max-time 60 --retry 0 --fail $http_base/$arch/htc__minimal__0/latest.txt); ret=$?
     if [[ $ret != 0 || ! $latest ]]; then
         my_warn "Unable to determine the latest sif for htc__minimal__0"
