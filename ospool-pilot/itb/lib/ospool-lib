@@ -164,21 +164,21 @@ function http_download {
 
 
 function download_minimal_sif_image {
-    # downloads a small Alpine based sif image and sticks it into the image dir
+    # downloads a small sif image and sticks it into the image dir
     local arch=$(uname -m)
-    local cvmfs_alpine="/cvmfs/oasis.opensciencegrid.org/osg/projects/OSG-Staff/images/$arch/library__alpine__latest.sif"
+    local cvmfs_image="/cvmfs/oasis.opensciencegrid.org/osg/projects/OSG-Staff/images/$arch/htc__minimal__0.sif"
     local http_base="https://ospool-images-web.nrp-nautilus.io/v2"
     local image_dir="$work_dir/../images"
 
     # only download once
-    if [ -e $image_dir/gwms-alpine.sif ]; then
+    if [ -e $image_dir/htc__minimal__0.sif ]; then
         return 0
     fi
 
     # try cvmfs
-    if [ -e $cvmfs_alpine ]; then
-        if cp "$cvmfs_alpine" $image_dir/gwms-alpine.sif; then
-            echo "Copied from $cvmfs_alpine" >$image_dir/gwms-alpine.sif.log
+    if [ -e $cvmfs_image ]; then
+        if cp "$cvmfs_image" $image_dir/htc__minimal__0.sif; then
+            echo "Copied from $cvmfs_image" >$image_dir/htc__minimal__0.sif.log
             return 0
         fi
     fi
@@ -192,8 +192,8 @@ function download_minimal_sif_image {
         return 1
     fi
 
-    if ! http_download $image_dir/gwms-alpine.sif $http_base/$arch/htc__minimal__0/$latest &>"$image_dir/gwms-alpine.sif.log"; then
-        cat "$image_dir/gwms-alpine.sif.log" >&2
+    if ! http_download $image_dir/htc__minimal__0.sif $http_base/$arch/htc__minimal__0/$latest &>"$image_dir/htc__minimal__0.sif.log"; then
+        cat "$image_dir/htc__minimal__0.sif.log" >&2
         return 1
     fi
 
@@ -240,7 +240,7 @@ function check_singularity_sif_support {
 
     download_minimal_sif_image || return 1
 
-    output=$(timeout 60s $singularity_path exec $image_dir/gwms-alpine.sif /bin/true 2>&1)
+    output=$(timeout 60s $singularity_path exec $image_dir/htc__minimal__0.sif /bin/true 2>&1)
     ret=$?
 
     if [[ $ret != 0 ]]; then
