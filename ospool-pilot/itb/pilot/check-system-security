@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import glob
 import platform
 import re
 import subprocess
@@ -45,84 +46,138 @@ def kernel_tuple_str(t):
     return ".".join(str(x) for x in t)
 
 
-# Minimum kernel version where CVE-2026-31431 is fixed, keyed by (distro_id, version_id).
+# Minimum kernel version where all the current issues are fixed, keyed by (distro_id, version_id).
 # Kernels at or above this version do not need the runtime socket test.
 # RHEL-family entries use a 5-tuple (major, minor, patch, rhel_release, patch_level).
-CVE_2026_31431_FIXED = {
-    ("almalinux", "8"): (4, 18, 0, 553, 121),
-    ("almalinux", "9"): (5, 14, 0, 611, 49),
-    ("almalinux", "10"): (6, 12, 0, 124, 52),
+KERNEL_PATCHED = {
+    ("almalinux", "8"): (4, 18, 0, 553, 122),
+    ("almalinux", "9"): (5, 14, 0, 611, 50),
+    ("almalinux", "10"): (6, 12, 0, 124, 53),
     ("centos", "7"): (3, 10, 0),
-    ("debian", "13"): (6, 12, 85),
-    ("rhel", "8"): (4, 18, 0, 553, 123),
-    ("rhel", "9"): (5, 14, 0, 611, 54),
-    ("rhel", "10"): (6, 12, 0, 124, 55),
-    ("rocky", "8"): (4, 18, 0, 553, 123),
-    ("rocky", "9"): (5, 14, 0, 611, 54),
-    ("rocky", "10"): (6, 12, 0, 124, 55),
+    ("debian", "13"): (6, 12, 86),
+    ("rhel", "8"): (4, 18, 0, 553, 124),
+    ("rhel", "9"): (5, 14, 0, 611, 55),
+    ("rhel", "10"): (6, 12, 0, 124, 56),
+    ("rocky", "8"): (4, 18, 0, 553, 124),
+    ("rocky", "9"): (5, 14, 0, 611, 55),
+    ("rocky", "10"): (6, 12, 0, 124, 56),
 }
+
+
+def check_module_disabled(module_name):
+    """Return (not_loaded, blocked) for the given kernel module.
+
+    not_loaded: True if lsmod shows the module is not currently active.
+    blocked:    True if /etc/modprobe.d/ contains 'install <module> /bin/false'.
+    """
+    try:
+        result = subprocess.run(["lsmod"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
+        not_loaded = not any(
+            line.split()[0] == module_name
+            for line in result.stdout.splitlines()
+            if line.split()
+        )
+    except OSError:
+        not_loaded = True
+
+    blocked = False
+    for path in glob.glob("/etc/modprobe.d/*"):
+        try:
+            with open(path) as f:
+                for line in f:
+                    tokens = line.split("#")[0].split()
+                    if (
+                        len(tokens) >= 3
+                        and tokens[0] == "install"
+                        and tokens[1] == module_name
+                        and tokens[2] == "/bin/false"
+                    ):
+                        blocked = True
+                        break
+        except OSError:
+            pass
+        if blocked:
+            break
+
+    return not_loaded, blocked
 
 
 def kernel_is_patched(distro_id, version_id, kernel_tuple):
     """Return True if patched, False if vulnerable, None if unknown distro/version."""
     key = (distro_id.lower(), version_id)
-    if key not in CVE_2026_31431_FIXED:
+    if key not in KERNEL_PATCHED:
         return None
-    fixed = CVE_2026_31431_FIXED[key]
+    fixed = KERNEL_PATCHED[key]
     if len(fixed) != len(kernel_tuple):
         return None
     return kernel_tuple >= fixed
 
 
-os_info = get_os_info()
-distro_id = os_info.get("ID", "unknown")
-version_id = os_info.get("VERSION_ID", "unknown").split(".")[0]
-pretty_name = os_info.get("PRETTY_NAME", f"{distro_id} {version_id}")
-
-kernel_raw = platform.release()
-kernel_tuple = parse_kernel_version(kernel_raw)
-
-print(f"CVE-2026-31431: System:  {pretty_name}  ({distro_id} {version_id})")
-print(f"CVE-2026-31431: Kernel:  {kernel_raw}")
-
-# CVE-2026-31431
-patched = kernel_is_patched(distro_id, version_id, kernel_tuple) if kernel_tuple else None
-
-if patched is True:
-    fixed_ver = CVE_2026_31431_FIXED[(distro_id.lower(), version_id)]
-    fixed_str = kernel_tuple_str(fixed_ver)
-    print(f"CVE-2026-31431: OK: kernel {kernel_raw} >= {fixed_str} (patched for {pretty_name})")
-else:
-    if patched is None:
-        note = "no fixed-version data for this distribution - running runtime check"
+def report_module(module, check_label):
+    not_loaded, blocked = check_module_disabled(module)
+    if not not_loaded:
+        print(f"check-system-security: {check_label}: VULNERABLE: {module} module is loaded")
+    elif not blocked:
+        print(f"check-system-security: {check_label}: VULNERABLE: {module} module is not loaded but not blocked in modprobe.d")
     else:
-        fixed_ver = CVE_2026_31431_FIXED[(distro_id.lower(), version_id)]
-        fixed_str = kernel_tuple_str(fixed_ver)
-        note = f"kernel {kernel_raw} < {fixed_str} - running runtime check"
-    print(f"CVE-2026-31431: ({note})")
+        print(f"check-system-security: OK: {module} module is not loaded and is blocked in modprobe.d")
+
+
+def copy_fail(distro_id):
     try:
         with open("/proc/cmdline") as f:
             cmdline = f.read()
     except OSError:
         cmdline = ""
     if "initcall_blacklist=algif_aead_init" in cmdline:
-        print("CVE-2026-31431: OK: algif_aead_init is blacklisted in kernel cmdline")
+        print("check-system-security: OK: algif_aead_init is blacklisted in kernel cmdline")
+        return
+    if distro_id.lower() not in ("debian", "ubuntu"):
+        print("check-system-security: copyfail: VULNERABLE: algif_aead_init not blacklisted in cmdline, on RHEL like system")
+        return
+    report_module("algif_aead", "copyfail")
+
+
+def copy_fail2():
+    report_module("xfrm_user", "copyfail2")
+
+
+def dirty_frag():
+    for module in ["esp4", "esp6", "rxrpc"]:
+        report_module(module, "dirty_frag")
+
+
+def main():
+    os_info = get_os_info()
+    distro_id = os_info.get("ID", "unknown")
+    version_id = os_info.get("VERSION_ID", "unknown").split(".")[0]
+    pretty_name = os_info.get("PRETTY_NAME", f"{distro_id} {version_id}")
+
+    kernel_raw = platform.release()
+    kernel_tuple = parse_kernel_version(kernel_raw)
+
+    print(f"check-system-security: System:  {pretty_name}  ({distro_id} {version_id})")
+    print(f"check-system-security: Kernel:  {kernel_raw}")
+
+    patched = kernel_is_patched(distro_id, version_id, kernel_tuple) if kernel_tuple else None
+
+    if patched is True:
+        fixed_ver = KERNEL_PATCHED[(distro_id.lower(), version_id)]
+        print(f"check-system-security: OK: kernel {kernel_raw} >= {kernel_tuple_str(fixed_ver)} (patched for {pretty_name})")
+        return
+
+    if patched is None:
+        note = "no fixed-version data for this distribution - running runtime check"
     else:
-        if distro_id.lower() not in ("debian", "ubuntu"):
-            print("CVE-2026-31431: VULNERABLE: algif_aead_init not blacklisted in cmdline, on RHEL like system")
-        else:
-            try:
-                result = subprocess.run(
-                    ["lsmod"], capture_output=True, text=True, check=True
-                )
-                loaded = any(
-                    line.split()[0] == "algif_aead"
-                    for line in result.stdout.splitlines()
-                    if line.split()
-                )
-            except OSError:
-                loaded = False
-            if loaded:
-                print("CVE-2026-31431: VULNERABLE: algif_aead module is loaded")
-            else:
-                print("CVE-2026-31431: OK: algif_aead module is not loaded")
+        fixed_ver = KERNEL_PATCHED[(distro_id.lower(), version_id)]
+        note = f"kernel {kernel_raw} < {kernel_tuple_str(fixed_ver)} - running runtime check"
+    print(f"check-system-security: ({note})")
+
+    copy_fail(distro_id)
+    copy_fail2()
+    dirty_frag()
+
+
+if __name__ == "__main__":
+    main()
+
