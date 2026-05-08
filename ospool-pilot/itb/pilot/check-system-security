@@ -64,11 +64,13 @@ KERNEL_PATCHED = {
 }
 
 
-def check_module_disabled(module_name):
+def check_module_disabled(module_name, builtin):
     """Return (not_loaded, blocked) for the given kernel module.
 
     not_loaded: True if lsmod shows the module is not currently active.
-    blocked:    True if /etc/modprobe.d/ contains 'install <module> /bin/false'.
+    blocked:    True if /proc/cmdline initcall_blacklist contains
+                '<module>_init', or /etc/modprobe.d/ contains
+                'install <module> /bin/false'.
     """
     try:
         result = subprocess.run(["lsmod"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, check=True)
@@ -81,23 +83,36 @@ def check_module_disabled(module_name):
         not_loaded = True
 
     blocked = False
-    for path in glob.glob("/etc/modprobe.d/*"):
-        try:
-            with open(path) as f:
-                for line in f:
-                    tokens = line.split("#")[0].split()
-                    if (
-                        len(tokens) >= 3
-                        and tokens[0] == "install"
-                        and tokens[1] == module_name
-                        and tokens[2] == "/bin/false"
-                    ):
-                        blocked = True
-                        break
-        except OSError:
-            pass
-        if blocked:
-            break
+    try:
+        with open("/proc/cmdline") as f:
+            cmdline = f.read()
+        for token in cmdline.split():
+            if token.startswith("initcall_blacklist="):
+                blacklisted = token[len("initcall_blacklist="):].split(",")
+                if f"{module_name}_init" in blacklisted:
+                    blocked = True
+                break
+    except OSError:
+        pass
+
+    if not builtin and not blocked:
+        for path in glob.glob("/etc/modprobe.d/*"):
+            try:
+                with open(path) as f:
+                    for line in f:
+                        tokens = line.split("#")[0].split()
+                        if (
+                            len(tokens) >= 3
+                            and tokens[0] == "install"
+                            and tokens[1] == module_name
+                            and tokens[2] == "/bin/false"
+                        ):
+                            blocked = True
+                            break
+            except OSError:
+                pass
+            if blocked:
+                break
 
     return not_loaded, blocked
 
@@ -113,33 +128,24 @@ def kernel_is_patched(distro_id, version_id, kernel_tuple):
     return kernel_tuple >= fixed
 
 
-def report_module(module, check_label):
-    not_loaded, blocked = check_module_disabled(module)
+def report_module(module, check_label, builtin=False):
+    not_loaded, blocked = check_module_disabled(module, builtin)
     if not not_loaded:
         print(f"check-system-security: {check_label}: VULNERABLE: {module} module is loaded")
     elif not blocked:
-        print(f"check-system-security: {check_label}: VULNERABLE: {module} module is not loaded but not blocked in modprobe.d")
+        print(f"check-system-security: {check_label}: VULNERABLE: {module} module is not loaded, but not blocked")
     else:
-        print(f"check-system-security: OK: {module} module is not loaded and is blocked in modprobe.d")
+        print(f"check-system-security: OK: {module} module is not loaded, and is blocked")
 
 
 def copy_fail(distro_id):
-    try:
-        with open("/proc/cmdline") as f:
-            cmdline = f.read()
-    except OSError:
-        cmdline = ""
-    if "initcall_blacklist=algif_aead_init" in cmdline:
-        print("check-system-security: OK: algif_aead_init is blacklisted in kernel cmdline")
-        return
-    if distro_id.lower() not in ("debian", "ubuntu"):
-        print("check-system-security: copyfail: VULNERABLE: algif_aead_init not blacklisted in cmdline, on RHEL like system")
-        return
-    report_module("algif_aead", "copyfail")
+    builtin = distro_id in ["rhel", "almalinux", "rocky"]
+    report_module("algif_aead", "copyfail", builtin)
 
 
-def copy_fail2():
-    report_module("xfrm_user", "copyfail2")
+def copy_fail2(distro_id):
+    builtin = distro_id in ["rhel", "almalinux", "rocky"]
+    report_module("xfrm_user", "copyfail2", builtin)
 
 
 def dirty_frag():
@@ -174,7 +180,7 @@ def main():
     print(f"check-system-security: ({note})")
 
     copy_fail(distro_id)
-    copy_fail2()
+    copy_fail2(distro_id)
     dirty_frag()
 
 
