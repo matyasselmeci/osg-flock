@@ -20,9 +20,6 @@ Utah-Kingspeak,50,limiting due to campus bandwidth usage
 Utah-Lonepeak,50,limiting due to campus bandwidth usage
 Utah-Notchpeak,50,limiting due to campus bandwidth usage
 
-# JS2: Mats/Tim 8/21/25 - OSDF failures
-Pervasive Technology Institute,10,limiting due to OSDF failures
-
 # George Washington University Viper: Tim C., 13 Oct 2025 - consistent OSDF transfer input failures
 # https://support.opensciencegrid.org/a/tickets/81275
 GWU-Viper,90,limited due to transfer failures
