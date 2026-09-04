@@ -276,6 +276,22 @@ if [[ $OSDF_PLUGIN ]]; then
             add_condor_vars_line FILETRANSFER_PLUGINS "C" "-" "+" "N" "N" "-"
             set_condor_knob STASH_PLUGIN "$OSDF_PLUGIN"
             set_condor_knob OSDF_PLUGIN "$OSDF_PLUGIN"
+
+            if [[ ! $PREFERRED_CACHES ]]; then
+                PREFERRED_CACHES=$(gconfig_get PREFERRED_CACHES)
+            fi
+
+            if [[ $PREFERRED_CACHES ]]; then
+                # TODO add format check
+                export PELICAN_CLIENT_PREFERREDCACHES="$PREFERRED_CACHES"
+                export OSDF_CLIENT_PREFERREDCACHES="$PREFERRED_CACHES"
+                advertise PREFERRED_CACHES "$PREFERRED_CACHES" "S"
+                gconfig_add PELICAN_CLIENT_PREFERREDCACHES "$PREFERRED_CACHES"
+                gconfig_add OSDF_CLIENT_PREFERREDCACHES "$PREFERRED_CACHES"
+                # Note: This gets added to the job environment.
+                add_condor_vars_line PELICAN_CLIENT_PREFERREDCACHES "S" "-" "+" "N" "N" "+"
+                add_condor_vars_line OSDF_CLIENT_PREFERREDCACHES "S" "-" "+" "N" "N" "+"
+            fi
         fi
     fi
 fi
